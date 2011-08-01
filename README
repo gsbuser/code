@@ -1,0 +1,11 @@
+See, http://www.cita.utoronto.ca/~pen/wiki/index.php/Git_Version_Control for 
+more information and usage.
+
+This is the code repository for the GSB for CITA's purposes. 
+
+In the repository you will see several folders and files. These folders and 
+files contain code that is linked symbolically to somewhere else. Changes to 
+code can be done in the repository or on the symbolic links.
+
+To have git ignore certain files put the file name or name pattern in the file,
+ '.gitignore'.
