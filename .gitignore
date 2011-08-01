@@ -1,0 +1,13 @@
+# use '#' at beginning of line to comment. Blank lines are ignored.
+# standard glob patterns used for ignoring files that fit the pattern.
+# ignored files won't be commited or added.
+
+# Ignore files ending in ~ (usually temp files created by editor)
+*~
+
+# Ignore files ending in .o or .a or .x (object and compiled programs)
+*.[oax]
+
+# Ignore files starting with LOG or ending with .log
+LOG*
+.log
