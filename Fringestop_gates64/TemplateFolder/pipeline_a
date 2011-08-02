@@ -1,0 +1,40 @@
+#!/bin/sh -x
+MONTH=Jul
+month=jul
+DATE=29
+TARGET=b2217+47
+DISKIN=EoRd
+DISKOUT=EoRb
+TBMACHINE=gsbm3
+DISKTB=gsbm3a
+FSALLDISK=a
+FNINPATH=/mnt/$DISKIN/gsbuser/EoR
+FNOUTPATH=/mnt/$DISKOUT/gsbuser/EoR
+FSALLOUTPATH=/mnt/$DISKTB/gsbuser/EoR
+NODES=dual_nodes
+ETH_PORTS=eth2,eth3
+OMP_NUM_THREADS=4
+export OMP_NUM_THREADS
+for i in 23; do
+FN=${TARGET}_${month}"$DATE"_$i
+FSALLDIR=$FSALLOUTPATH/${MONTH}"$DATE"/"$FN"
+mkdir $FSALLOUTPATH/${MONTH}"$DATE"
+mkdir $FSALLOUTPATH/${MONTH}"$DATE"/"$FN"
+mkdir $FN
+cd $FN
+../decodetimecompressed.x $FNINPATH/$FN.node0 timestamp.dat | gawk '{if (NR%256==1) print }'
+perl ../convert_timestamp.perl timestamp.dat > tjd.dat
+../tjd2gst.x < tjd.dat > times.dat
+NEPOCH=`wc -l times.dat|gawk '{print $1 -5}'`
+#NEPOCH=1000
+OBS_EPOCH=`head -1 times.dat|gawk '{print $1}'`
+cd ..
+#done
+make clean
+make CFLAGS1="-DNEPOCH=$NEPOCH -DOBS_EPOCH=$OBS_EPOCH" || exit
+sleep 1  # need some time for NFS to catch up
+time /opt/openmpi-1.2.2/bin/mpirun  -np 16 -bynode -hostfile ${NODES} --mca btl_tcp_if_include ${ETH_PORTS} ./fringestop.x  $FNINPATH/$FN $FNOUTPATH/$FN $FSALLDIR/$FN
+cat $FN/timestamp.dat >> $FNOUTPATH/$FN.node0.fs0
+ssh -n $TBMACHINE /mnt/code/gsbuser/EoR/Analysis/analyze_dual64.sh $FN $MONTH $DATE $i $DISKIN $DISKOUT $FSALLDISK $NEPOCH >& /mnt/EoRc/gsbuser/EoR/LOGS/LOGanalysis_${MONTH}"$DATE"_"$i" &
+
+done
