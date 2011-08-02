@@ -2,8 +2,8 @@
 # standard glob patterns used for ignoring files that fit the pattern.
 # ignored files won't be commited or added.
 
-# Ignore files ending in ~ (usually temp files created by editor)
-*~
+# Ignore files ending in ~ or # (usually temp files created by editor)
+*[~#]
 
 # Ignore files ending in .o or .a or .x (object and compiled programs)
 *.[oax]

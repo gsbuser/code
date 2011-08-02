@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+<Document>
+  <name>Grand Daddy Map</name>
+  <description><![CDATA[Listing of all RfI sources near GMRT.
+Red are candidates as shown on chimap.
+Blue are transmit sites from GPS coord.
+Purple are trasmit sites as shown on chimap.
+Pink are candidates after adding the difference.
+Green are verified Pink sites and ready for wireman.
+Yellow are something not specified above]]></description>
+  <Style id="style1">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/red-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Style id="style5">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/green-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Style id="style2">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/ltblue-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Style id="style6">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/yellow-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Style id="style3">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/purple-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Style id="style4">
+    <IconStyle>
+      <Icon>
+        <href>http://maps.gstatic.com/intl/en_in/mapfiles/ms2/micons/pink-dot.png</href>
+      </Icon>
+    </IconStyle>
+  </Style>
+  <Placemark>
+    <name>test name</name>
+    <description><![CDATA[Test Descriptioin]]></description>
+    <styleUrl>#style6</styleUrl>
+    <Point>
+      <coordinates>0.000000,0.000000,0.000000</coordinates>
+    </Point>
+  </Placemark>
+</Document>
+</kml>

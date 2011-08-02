@@ -1,0 +1,13 @@
+# Complementary to 'ivmap.f90' definemask subroutine - written by Joshua Albert
+# FORMAT:
+# [A]{}[T]{}[F]{}	(1)
+# Keep format (1) and simply fill in ranges
+# {} is a range and may be {X,Y,Z,...} or {X-Y}, {}=empty, {-}=Whole range
+# Example:
+# [A]{12,26}[T]{400-420}[F]{20}
+# Means: for antennas 12 and 26 and for tiemstamps between 400 and 420 and frequency 20 apply a mask (don't include that data for ivmap.x procedures).
+# You may stack lines to achieve your desired mask.
+# For more info check out Wiki page "Masking antennas, timestamps, and frequencies with ivmap"
+[A]{}[T]{1-50}[F]{1,6,13,45,34}
+[A]{1}[T]{}[F]{40-60}
+
