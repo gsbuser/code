@@ -1,0 +1,515 @@
+#include "mpi.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include "xfft.h"
+#include <stdio.h>
+#include "omp.h"
+
+
+//#define DUMP1BIT
+#define PROFILE
+#define MIN(x,y) ((x<y)?x:y)
+#define MPIWAITCHUNK 1
+#define GATEPOWOUT 10
+/* 
+   revised August 2, 2007
+   for two independent sets of send and receive nodes.
+   Implicitly assumes that there are more correlation than acquisition nodes.
+*/
+
+void corr_driver(signed char *buf, int len, MPI_Comm mpi_acq_comm)
+{
+  static double timestart;
+
+  static char dumpcorrbuf[2][NFOLD*NCROSS/NNODECORR+sizeof(struct CorrHeader)+sizeof(int)+sizeof(float)*NCORR+sizeof(char)*NFOLD*FFTLEN/16/NNODECORR];
+  static char dump1bitbuf[2][(NT*NNODEACQ)/(8*NNODECORR)+sizeof(tv)];
+  
+  static int iteration=0;
+  static int fdout,ierr,rank,nproc,fdout1bit,fdgpow;
+//  ssize_t size;
+
+  __declspec(align(128)) static char obuf[3][NT/4]; // 4-bit FFT output data, half the buffer
+  __declspec(align(128)) static char obuf8[2][NT/2]; // half the raw data
+  __declspec(align(128)) static char xbuf[2][NT/2]; // 4-bit on xmac nodes
+  __declspec(align(128)) static int cross[NFOLD][NCROSS];
+  __declspec(align(128)) static short int norm[NCHAN][FFTLEN];
+  
+  int i,j,k,m;
+  struct timeb start, current;
+  double sec,delaymin,time0;
+  static struct timeval tvhist[3];
+
+  static short int idelay[NCHAN];
+  /* for gating of incoherent total power */
+  static int gatepow[NGATEAUTO][NFAUTO];
+  static double gatepowd[NGATEAUTO][NFAUTO],gatepowsum[NGATEAUTO][NFAUTO];
+  FILE *fp;
+  char fn[80],fn1[80];
+  static short int cosac[NDIMGATE],sinac[NDIMGATE],gate[NDIMGATE];
+  static int dmoffset[FFTLEN/2/NNODECORR];
+  // === B0823+26 ======================================================
+  //double dm=19.4751;  //B0823+26  Dec17 3am, 2008 
+  //double period=0.53062961469460993;
+  //
+  //double dm=19.4751;  //B0823+26  Dec20 3am, 2008 
+  //double period=0.53063189802572958;
+  //double dm=19.4751;  //B0823+26  Dec25 3am, 2008 
+  //double period=0.53063590904417106;
+  //double dm=19.4751;  //B0823+26  Jan 8 3am, 2008 
+  //double period=0.53064814808364963;
+  //double dm=19.4751;  //B0823+26  Jan 9 3am, 2008 
+  //double period=0.53064905705275385;
+  //double dm=19.4751;  //B0823+26  Jan 11 3am, 2008 
+  //double period=0.53065088340109503;
+  //double dm=19.4751;  //B0823+26  Jan 12 3am, 2008 
+  //double period=0.53065180089504747;
+  //double dm=0.0;  //B0823+26  Jan 13 3am, 2008 
+  //double period=0.53065272143187462;
+  // === B2217+47 ======================================================
+  //double dm=43.516;  //B2217+47  June 29 04am, 2009
+  //double period=0.53843885097630653;  // June 29 04am, 2009  
+  //double dm=43.516;  //B2217+47  June 30 04am, 2009
+  //double period=0.53843904567176833;  // June 30 04am, 2009  
+  double dm=43.516;  //B2217+47  July 01 04am, 2009
+  double period=0.53843896847426902;  // July 01 04am, 2009  
+   //double dm=43.516;  //B2217+47  Aug 18 11pm, 2008
+  //  double period=0.53845132855582085;  // Aug 18 11pm, 2008  
+  // double period=0.53845207234365068;  //B2217+47  Aug 20 1am, 2008
+  //double period=0.53845252186433322;  //Aug 21 1am, 2008
+  //double period=0.53845297697284241;  //Aug 22 1am, 2008
+  //double period=0.53845343775724348;  //Aug 23 1am, 2008
+  //double period=0.53845603844148366;  //Aug 28 12:30am, 2008
+  // === B0823+26 ======================================================
+  //double dm=19.4751;  //B0823+26 Aug20 7am, 2008 
+  //double period=0.53063898642355628;
+  // ==== 2007 =========================================================
+  //double dm=3.17600 ;   // B1929+10
+  //double period=226.51581287877815/1000.;
+  //double period=226.52455415509880/1000.; // Aug 8, 10PM, 2007
+  //double dm=14.176 ;   // B2016+28
+  //double period=557.95353755889391/1000.; // Aug 9, 12:30AM, 2007
+  //double dm=43.516 ;   // B2219+47
+  //double dm=12.889 ;   // B0834+06
+  //double dm=19.4751 ;   // B0823+26
+  //double dm=43.516;  //B2217+47
+  //double dm=43.516;  //B2217+47 on May 20, 2008, 4am 
+  //double dm=5.75130;   // B0809+74
+  //double dm=36.6 ;   // J0843+0719
+  //double period=538.44701517651617/1000.; // Aug 9, 8:45PM, 2007
+  //double period=538.44700113885358/1000.; // Aug 9, 12:30AM, 2007
+  //double period=538.44739535373128/1000.; // Aug 10, 9:00PM, 2007
+  //double period=538.448196484749064/1000.; // Aug 12, 12:00AM, 2007
+  //double period=538.448397818021673/1000.; // Aug 13, 12:00AM, 2007
+  //double period=538.448941929355329/1000.; // Aug 14, 12:00AM, 2007
+  //double period=1.2737682915785; // b0834
+  //double period=1.277366458210704;// b0834 dec 4
+  //double period=0.5306220979499;// b0823+26 dec 6
+ // double period=0.53062339799224662;// b0823+26 3AM dec 9
+  //double period=0.53062405943537465;// b0823+26 3AM dec 10
+//  double period=0.53062490103624748;// b0823+26 3:48 AM dec 11 (transit)
+//  double period=0.53062557388143478;// b0823+26 3:44 AM dec 12 (transit)
+  // double period=0.53062695447312717;// b0823+26 3:36 AM dec 14 (transit)
+  //  double period=0.53062766136351593; // b0823+26 3:32 AM dec 15 (transit)
+  // double period=0.53062837999848625;  // b0823+26 3:28:22 AM dec 16 (transit)
+  //  double period=0.53062910758558803; // b0823+26 3:24:27 AM dec 17 (transit)
+  //double period=0.53062984457453592; // b0823+26 3:20 AM dec 18 (transit)
+  //double period=0.53850370380092704;  //B2217+47 19:00 dec 17 (beam scan)
+  //double period=0.53850391648296886; //B2217+47 19:00 dec 19 (bandpass)
+  //double period=0.53844406749291124; //B2217+47 4am, May 20, 2008
+  //double period=1.29220186954528003;// b0809+74 dec 6
+  //double period=1.36586; // J0843+0719
+  //      double dm=26.77600 ;   // B0329
+        //double period=714.46573783550343/1000.; // Aug 9, 1:20 AM, 2007
+   //     double period=714.46606694532477/1000.; // Aug 10, 7:45 AM, 2007
+  //double freq0=248; // MHz  ! lo1=310 lo4=62
+  double freq0=156; // MHz  ! lo1=218 lo4=62
+  int isign=-1; 	// -1 for inverted frequencies
+        //double dm=73.77 ;   // B0740-28
+        //double period=166.76781634965982/1000.;
+	//double freq0=1170;
+
+
+  // check to see that we have a full buffer
+  if (len != NT) {
+    printf("did not get full buffer, rank: %d\n",rank);
+    exit(43);
+  }
+
+  if (iteration == 0) {
+    // Initialize MPI
+    ierr=MPI_Comm_size(MPI_COMM_WORLD,&nproc);
+    if (ierr != 0) printf("error finding comm size=%d\n",ierr);
+    if (nproc != NNODEACQ+NNODECORR) {
+      printf("number nodes compiled %d != number nodes executed %d\n",NNODEACQ+NNODECORR,nproc);
+      exit(42);
+    }
+    ierr=MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    if (ierr != 0) printf("error finding comm rank=%d\n",ierr);
+    // initialize fft 
+    fft1dippirc16init(FFTLEN);
+    for (j=0;j<3;j++) for (i=0;i<NT/4;i++) obuf[j][i]=0;
+    if (rank >= NNODECORR || rank < NNODEACQ) {
+    fp=fopen("delay.dat","r");
+    if (fp==NULL) {
+      perror("open delay.dat");
+      exit(-1);
+    }
+    printf("rank %d delay=",rank);
+    delaymin=1.e20;
+    for (i=0;i<NNODEACQ*NCHAN;i++) {
+      double delay;
+      fscanf(fp,"%lf\n",&delay);
+      delay=-delay;
+      delaymin=MIN(delaymin,delay);
+      if (i/NCHAN==rank%NNODECORR) idelay[i%NCHAN]=delay/0.03;
+    }
+    for (i=0;i<NCHAN;i++){
+      idelay[i]-=delaymin/0.03;
+      printf("%d ",idelay[i]);
+    }
+    printf("\n");
+    fclose(fp);
+    }
+#ifdef GATEDPOW
+    for (i=0;i<NGATEAUTO;i++) for(j=0;j<NFAUTO;j++) gatepowd[i][j]=gatepow[i][j]=0;
+    if (rank == 0) {
+        sprintf(fn,outfile,rank,"gatepow");
+	fdgpow=open(fn,O_TRUNC|O_CREAT|O_WRONLY|O_NONBLOCK,S_IRUSR|S_IWUSR|S_IROTH);
+    if (fdgpow<0) {
+      printf("rank %d: ",rank);
+      perror("open gpow file");
+    }
+    }
+#endif
+    if (rank >= NNODECORR) {
+    for (j=0;j<NCHAN;j++) for (i=0;i<FFTLEN/2;i++) norm[j][i]=1;
+    sprintf(fn,outfile,rank,".norm");
+    normalize(norm,buf,"/tmp/beamnorm.dat",rank);
+    MPI_Send(norm,FFTLEN*8,MPI_CHAR,rank-NNODECORR,100,MPI_COMM_WORLD);
+    } else {
+    MPI_Status status;
+    for (i=0;i<NCROSS;i++) for (j=0;j<NFOLD;j++) cross[j][i]=0;
+    if (rank < NNODEACQ) {
+      MPI_Recv(norm,FFTLEN*8,MPI_CHAR,rank+NNODECORR,100,MPI_COMM_WORLD,&status);
+    sprintf(fn,outfile,rank,".norm");
+    fdout=open(fn,O_TRUNC|O_CREAT|O_WRONLY|O_SYNC,S_IRUSR|S_IWUSR|S_IROTH);
+    if (fdout<0) {
+      printf("rank %d: ",rank);
+      perror("open output file");
+    }
+    write(fdout,norm,FFTLEN*8);
+    close(fdout);
+    }
+    // open output data file
+    sprintf(fn,outfile,rank,"");
+    fdout=open(fn,O_TRUNC|O_CREAT|O_WRONLY|O_SYNC,S_IRUSR|S_IWUSR|S_IROTH);
+    //fdout=open(fn,O_TRUNC|O_CREAT|O_WRONLY|O_NONBLOCK,S_IRUSR|S_IWUSR|S_IROTH);
+    if (fdout<0) {
+      printf("rank %d: ",rank);
+      perror("open output file");
+    }
+#ifdef DUMP1BIT
+    sprintf(fn1,outfile,rank,".bit");
+    fdout1bit=open(fn1,O_TRUNC|O_CREAT|O_WRONLY|O_SYNC,S_IRUSR|S_IWUSR|S_IROTH);
+    if (fdout<0) {
+      printf("rank %d: ",rank);
+      perror("open 1bit file");
+    }
+#endif
+    }
+  } // firstime==1
+//  printf("rank %d enter corr_driver\n",rank);
+  MPI_Bcast(&tv,sizeof(struct timeval),MPI_CHAR,MASTERNODE,MPI_COMM_WORLD);
+#if 0
+  if (iteration == 0) timestart=tv.tv_sec+tv.tv_usec/1000000.;
+#else
+	//timestart=1186686126+165118/1000000.;  // ca 12:30 AM Aug 10, 2007, start of 2217_5
+	timestart=1197338375+850306/1000000.;  // ca 7:30 AM Dec 11, 2007, start of 0823 11_9
+#endif
+    if (iteration == 0 && rank==0) printf("current time is %lf, using start time of %lf\n",tv.tv_sec+tv.tv_usec/1000000.,timestart);
+#ifdef DUMP1BIT
+  omp_set_num_threads(5);
+#else
+  omp_set_num_threads(4);
+#endif
+#pragma omp parallel sections default(shared) private(start,current,sec) 
+//  {
+//#pragma omp sections nowait
+    {
+/* sections 	1: FFT.  Single thread.  almost all nodes
+		2: xmac. only compute nodes
+		3: communication.  All nodes
+		4: 1bit disk write.  compute nodes
+		5: corrbuf disk write.  compute nodes
+   the acquisition nodes should run without hyperthreading.
+*/
+
+
+#pragma omp section
+      {  /* FFT section */
+#ifdef PROFILE
+      ftime( &start );
+#endif
+      if (rank>=NNODECORR) {
+	printf("rank %d ",rank);
+	for (int i=0;i<8;i++) printf("%d ",buf[i]);
+	printf("\n");
+	// fft data in buf -> obuf
+        time0=(tv.tv_sec+tv.tv_usec/1000000.)-timestart;
+#ifdef GATEDPOW
+	for (i=0;i<NGATEAUTO;i++) for(j=0;j<NFAUTO;j++) {
+		gatepowd[i][j]+=gatepow[i][j];
+		gatepow[i][j]=0;
+	}
+#endif
+	xfft(gatepow, obuf[iteration%3],buf,norm,idelay,3,time0,period);
+#if 0
+        int fdx=open("/mnt/raid0/pen/fftdump.dat",O_TRUNC|O_CREAT|O_WRONLY|O_SYNC,S_IRUSR|S_IWUSR|S_IROTH);
+	write(fdx,obuf[iteration%3],NT/4);
+        fdx=open("/mnt/raid0/pen/ibufdump.dat",O_TRUNC|O_CREAT|O_WRONLY|O_SYNC,S_IRUSR|S_IWUSR|S_IROTH);
+	write(fdx,buf,NT/2);
+	exit(-1);
+#endif
+#ifdef PROFILE
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+	if (sec>0.25)
+	printf("rank %d fft %d size buffers in %lf seconds\n",rank,NT, sec);
+#endif
+      } else if (iteration>0 ) {
+        int nrecv,itarget,isource;
+        if (rank<NNODEACQ) {
+        time0=(tvhist[(iteration+2)%3].tv_sec+tvhist[(iteration+2)%3].tv_usec/1000000.)-timestart;
+	xfft(gatepow, obuf[(iteration+2)%3],obuf8[iteration%2],norm,idelay,1,time0,period);
+//	for (i=0;i<1000;i++) printf("%hhx",obuf[(iteration+2)%3][i]);
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+//	printf("rank %d fft %d size buffers in %lf seconds\n",rank,NT, sec);
+        }
+#ifdef DUMP1BIT
+        if (iteration>2) {
+		dump1bit(dump1bitbuf[iteration%2],xbuf[iteration%2],tvhist[iteration%3]);
+	}
+#endif
+#ifdef GATEDPOW
+	for (i=0;i<NGATEAUTO;i++) for(j=0;j<NFAUTO;j++) {
+		gatepowd[i][j]+=gatepow[i][j];
+		gatepow[i][j]=0;
+	}
+#endif
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+        if (sec>0.25)
+	printf("rank %d fft+dump %d size buffers in %lf seconds\n",rank,NT, sec);
+#if 0
+/* needs thread-safe MPI, doesnt work under openMPI 1.2.3 */
+        nrecv=0;
+        for (i=0;i<NNODECORR;i++) {
+           MPI_Request request[2*MPIWAITCHUNK];
+           MPI_Status stat[2*MPIWAITCHUNK];
+	   int size=MPI_BUF_CHUNK/2;
+
+           itarget=(i+rank)%NNODECORR;
+	   if (rank<NNODEACQ)
+           MPI_Isend(obuf[(iteration+1)%2]+i*size,size,MPI_CHAR,itarget,101,MPI_COMM_WORLD,request+nrecv++);
+           isource=(NNODECORR-i+rank)%NNODECORR;
+           if (isource < NNODEACQ)
+           MPI_Irecv(xbuf[iteration%2]+isource*size+NT/4,size,MPI_CHAR,isource,101,MPI_COMM_WORLD,request+nrecv++);
+           if ((i+1)%MPIWAITCHUNK==0) {
+                printf("rank=%d start quad core waitall i=%d nrecv=%d isource=%d itarget=%d\n",rank,i,nrecv,isource,itarget);
+                MPI_Waitall(nrecv,request,stat);
+                printf("rank=%d done quad core waitall i=%d\n",rank,i);
+                nrecv=0;
+           }
+        }
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+	printf("rank %d 2nd mpi %d size buffers in %lf seconds\n",rank,NT, sec);
+#endif
+      }
+      }
+#pragma omp section
+      { 
+	if (rank<NNODECORR && iteration > 2){
+
+        ftime( &start );
+
+        time0=(tvhist[iteration%3].tv_sec+tvhist[iteration%3].tv_usec/1000000.)-timestart;
+        foldpulsar(cosac,sinac,dmoffset,gate,time0,dm,period,freq0,isign,rank);
+  	xmac(cross,xbuf[iteration%2],sinac,cosac,dmoffset,gate);
+  	xmac(cross,xbuf[iteration%2]+NTCORR/2,sinac+NSIZEGATE/2,cosac+NSIZEGATE/2,dmoffset,gate+NSIZEGATE/2);
+
+//	dumpcorr(fdout,cross,tvhist[iteration%3]);
+
+	dumpcorr(dumpcorrbuf[iteration%2],cross,tvhist[iteration%3]);
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+	if (sec>0.25)
+	printf("rank %d xmac+convert %d size buffers in %lf seconds\n",rank, NTCORR*2,sec);
+        }
+      }
+#pragma omp section
+      {
+
+  // all the communication
+  // pass work units
+	  //	  const int MPIWAITCHUNK=1;
+	  //NNODECORR;
+	  int mpi_size,nrecv;
+	  int isource,mpisource,itarget;
+	  mpi_size=MPI_BUF_CHUNK/2;
+
+	  ftime( &start );
+	  if (rank>=NNODECORR) {  /* if we are an acquisition node: */
+
+		/* send half the raw data off */
+//		printf("rank %d start send\n",rank);
+	    MPI_Send(buf+NT/2,NT/2,MPI_CHAR,rank-NNODECORR,100,MPI_COMM_WORLD);
+		//printf("rank %d done send\n",rank);
+
+	  if (iteration>1) {  /* send the FFTd buffers */
+            nrecv=0;
+	    for (i=0;i<NNODECORR;i++) {
+              MPI_Request request[MPIWAITCHUNK];
+              MPI_Status stat[MPIWAITCHUNK];
+
+	      itarget=(i+rank)%NNODECORR;
+	      MPI_Isend(obuf[(iteration+1)%3]+itarget*mpi_size,mpi_size,MPI_CHAR,itarget,200+i,MPI_COMM_WORLD,request+nrecv++);
+		//printf("rank %d done isend size=%d\n",rank,size);
+/* for NNODECORR=8, NNODE=16, we have the following:
+	i=0:  rank=0: itarget=0, isource=0,8.
+	i=1:  rank=0: itarget=1, isource=7,15
+ */
+	      if ((i+1)%MPIWAITCHUNK==0){
+//		printf("rank %d start waitall isend nrecv=%d i=%d itarget=%d\n",rank,nrecv,i,itarget);
+		MPI_Waitall(nrecv,request,stat);
+		nrecv=0;
+//		printf("rank %d done waitall isend i=%d\n",rank,i);
+	      }
+	    }
+	    }
+	  } else {
+            if (rank<NNODEACQ){  /* first group of nodes gets 1/2 buffer to FFT */
+	       MPI_Status status;
+		//printf("rank %d start recv\n",rank);
+	       MPI_Recv(obuf8[1-iteration%2],NT/2,MPI_CHAR,rank+NNODECORR,100,MPI_COMM_WORLD,&status);
+//	for (i=0;i<1000;i++) printf("%hhx",obuf8[1-iteration%2][i]);
+		//printf("rank %d done recv\n",rank);
+	    }
+		/* first get the FFTd data from the acquisition nodes */
+	  if (iteration>1) {
+	    nrecv=0;
+	    for (i=0;i<NNODECORR;i++) {
+	      MPI_Request request[MPIWAITCHUNK];
+	      MPI_Status stat[MPIWAITCHUNK];
+
+	      isource=(NNODECORR-i+rank)%NNODECORR;
+	      if (isource<NNODEACQ) {
+		mpisource=isource+NNODECORR;
+		MPI_Irecv(xbuf[1-iteration%2]+isource*mpi_size,mpi_size,MPI_CHAR,mpisource,200+i,MPI_COMM_WORLD,request+nrecv++);
+		//printf("rank %d done irecv size=%d\n",rank,size);
+	      }
+	      if ((i+1)%MPIWAITCHUNK==0 && nrecv>0) {
+//		printf("rank %d start waitall nrecv=%d\n",rank,nrecv);
+		MPI_Waitall(nrecv,request,stat);
+		nrecv=0;
+//		printf("rank %d done waitall\n",rank);
+	      }
+            }
+		/* now swap FFT'd data with computation nodes which did half the FFTs */
+#if 1
+	    nrecv=0;
+            for (i=0;i<NNODECORR;i++) {
+	      static MPI_Request request[2*MPIWAITCHUNK];
+	      static MPI_Status stat[2*MPIWAITCHUNK];
+
+              itarget=(i+rank)%NNODECORR;
+	      if (rank<NNODEACQ)
+              MPI_Isend(obuf[(iteration+1)%3]+itarget*mpi_size,mpi_size,MPI_CHAR,itarget,100+i,MPI_COMM_WORLD,request+nrecv++);
+              isource=(NNODECORR-i+rank)%NNODECORR;
+	      if (isource < NNODEACQ) 
+              MPI_Irecv(xbuf[1-iteration%2]+isource*mpi_size+NTCORR/2,mpi_size,MPI_CHAR,isource,100+i,MPI_COMM_WORLD,request+nrecv++);
+              if ((i+1)%MPIWAITCHUNK==0) {
+//		printf("rank %d start 2nd waitall nrecv=%d isource=%d itarget=%d i=%d\n",rank,nrecv,isource,itarget,i);
+                MPI_Waitall(nrecv,request,stat);
+#if 0
+		for (int ii=0;ii<mpi_size&&xbuf[1-iteration%2][isource*mpi_size+ii+NTCORR/2]==0;ii++) 
+			if (ii>mpi_size-2 && iteration>3) {
+				printf("zero buffer, mpi_size=%d isource=%d, rank=%d iteration=%d\n",mpi_size,isource,rank,iteration);
+//				exit(-1);
+			}
+#endif
+	      }
+//		printf("rank %d done 2nd waitall nrecv=%d i=%d\n",rank,nrecv,i);
+                nrecv=0;
+            }
+#endif
+	  }
+	  
+	}
+	ftime( &current );
+	sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+	if (sec>0.25)
+	printf("rank %d mpi %d size buffers in %lf seconds\n",rank, NT, sec);
+
+      }
+#ifdef DUMP1BIT
+#pragma omp section
+      {
+	if (rank<NNODECORR && iteration>3) {
+       		ftime( &start );
+		int wsize=(NT*NNODEACQ)/(8*NNODECORR)+sizeof(tv);
+		if(write(fdout1bit,dump1bitbuf[1-iteration%2],wsize)!=wsize) perror("write1bit");
+		ftime( &current );
+		sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+		if (sec>0.25)
+		printf("rank %d write %d size 1bit buffers in %lf seconds\n",rank, wsize, sec);
+	}
+      }
+#endif
+#pragma omp section
+      {
+	if (rank<NNODECORR && iteration>3) {
+		struct CorrHeader *dumpheaderp;
+
+       		ftime( &start );
+		dumpheaderp=dumpcorrbuf[1-iteration%2];
+		int wsize=dumpheaderp->totalsize; // NCROSS*NFOLD/NNODECORR+sizeof(tv)+sizeof(int);
+		
+		if(write(fdout,dumpcorrbuf[1-iteration%2],wsize)!=wsize) perror("write corr");
+		ftime( &current );
+		sec = (((current.time - start.time) * 1000) + (current.millitm - start.millitm)) / 1000.0;
+		if (sec>0.25)
+		printf("rank %d write %d size corr buffers in %lf seconds\n",rank, wsize, sec);
+	}
+      }
+	
+    } // end parallel sections
+
+  
+//  }
+//  if (rank ==0) printf("tv=%d\n",tv.tv_sec);
+#ifdef GATEDPOW
+	if ((iteration+1)%GATEPOWOUT==0) {
+	if (rank==0) for (i=0;i<NGATEAUTO;i++) for(j=0;j<NFAUTO;j++) gatepowsum[j][i]=0;
+	printf("rank %d calling MPI_Reduce\n",rank);
+	if (iteration>0) MPI_Reduce(gatepowd,gatepowsum,NGATEAUTO*NFAUTO,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+	for (i=0;i<NGATEAUTO;i++) for(j=0;j<NFAUTO;j++) gatepowd[j][i]=0;
+	printf("rank %d done MPI_Reduce\n",rank);
+	if (rank==0) {
+		if (write(fdgpow,gatepowsum,NGATEAUTO*NFAUTO*sizeof(double)) != NGATEAUTO*NFAUTO*sizeof(double)) {
+			perror("write gatepow");
+			printf("write: fdgpow=%d\n",fdgpow);
+		}
+	}
+	}
+#endif
+  tvhist[iteration%3]=tv;
+  iteration++;
+  start=current;
+//  printf("rank %d exit corr_driver\n",rank);
+}

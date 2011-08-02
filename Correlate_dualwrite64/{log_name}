@@ -1,0 +1,1 @@
+/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include eth0,eth1 -n 48 -bynode -hostfile test_nodes mpi_dual /mnt/{drive_name}/gsbuser/EoR/{file_name}.node%d%s

@@ -1,0 +1,94 @@
+#!/bin/sh -x
+
+# Start/stop time in Unix epoch. (Use ../Scripts/extract-unix-epoch.py)
+#   Current date: date +%s
+#   Other date  : date -d "mmm dd hh:mm:ss" +%s
+#   Convert back: date -d "1970-01-01 05:30:00 1234567890 sec"
+
+DATE=18
+MONTH=jul
+target=b2310+42
+
+# Will need to get the start/stop times in the morning (work with Nidhi) should be only one set.
+starttimes=( 1310945920 )
+
+stoptimes=( 1310954100 )
+
+
+# Scan number to assign to the first starttime
+scanstart=1
+
+disk1=EoRd
+disk2=EoRc
+
+ethports=eth0,eth1
+hostfile=test_nodes
+nnodes=$( wc -l ${hostfile} | awk '{print $1}')
+
+scanstop=$(( ${scanstart} + ${#starttimes[@]} - 1))
+
+# This assumes scans of equal length
+#sleeptime=$(( ${stoptimes[0]} - ${starttimes[0] - 200 ))
+
+
+# set the gain table for dual.cpp to read
+#/mnt/code/gsbuser/dvl-6/work2/run_gaineq0.csh
+#cp -p /mnt/code/gsbuser/dvl-6/work2/test_nodes_raw .
+#cp -p /mnt/code/gsbuser/dvl-6/work2/run_rawdump .
+#./GAIN.csh
+#./GAIN.csh
+#./show-gains.csh > $target.${MONTH}${DATE}.gaintab.dat
+
+make
+date
+
+for (( i=$scanstart;i<$scanstop+1;i+=2)) ; do 
+
+    echo -n "SCAN ${i}: Starts at `date -d \"1970-01-01 05:30:00 ${starttimes[$i-$scanstart]} sec\" +%T`"
+    echo    " and ends at `date -d \"1970-01-01 05:30:00 ${stoptimes[$i-$scanstart]} sec\" +%T`"
+    # Wait for this scan's scheduled start time
+    while [ `date +%s`  -lt ${starttimes[$i-$scanstart]} ] ; do sleep 1 ; done
+
+    # Only start this scan if it isn't already supposed to be over
+    if [ `date +%s` -lt ${stoptimes[$i-$scanstart]} ]; then
+	date
+	echo "STARTING SCAN ${i}"
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} mpi_dual   /mnt/${disk1}/gsbuser/EoR/${target}_${MONTH}${DATE}_$i.node%d%s >& LOG_${target}_${MONTH}${DATE}_$i &
+        # Sleep until this scan's scheduled stop time minutes two minutes for safety
+	sleep $(( ${stoptimes[$i-$scanstart]} - `date +%s` - 120 ))
+	while [ `date +%s` -lt ${stoptimes[$i-$scanstart]} ] ; do sleep 1 ; done
+        # Now at the scheduled stop time, stop the scan
+	touch STOP
+	sleep 5
+	echo "STOPPING SCAN ${i}"
+	kill %1
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -1 mpi_dual   
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -9 mpi_dual   
+	date
+    fi
+
+    # If next scan is past our stopping point, quit.
+    if ((i+1>$scanstop)); then break; fi
+
+    echo -n "SCAN $((i+1)): Starts at `date -d \"1970-01-01 05:30:00 ${starttimes[$i-$scanstart+1]} sec\" +%T`"
+    echo    " and ends at `date -d \"1970-01-01 05:30:00 ${stoptimes[$i-$scanstart+1]} sec\" +%T`"
+    # Wait for the next scan's scheduled start time
+    while [ `date +%s`  -lt ${starttimes[$i-$scanstart+1]} ] ; do sleep 1 ; done
+
+    if [ `date +%s` -lt ${stoptimes[$i-$scanstart+1]} ]; then
+	date
+	echo "STARTING SCAN $((i+1))"
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} mpi_dual   /mnt/${disk2}/gsbuser/EoR/${target}_${MONTH}${DATE}_$((i+1)).node%d%s >& LOG_${target}_${MONTH}${DATE}_$((i+1)) &
+	sleep $(( ${stoptimes[$i-$scanstart+1]} - `date +%s` - 120 ))
+	while [ `date +%s`  -lt ${stoptimes[$i-$scanstart+1]} ] ; do sleep 1 ; done
+	touch STOP
+	sleep 5
+	echo "STOPPING SCAN $((i+1))"
+	kill %1
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -1 mpi_dual   
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -9 mpi_dual   
+	date
+    fi
+
+done
+

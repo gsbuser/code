@@ -1,0 +1,92 @@
+#!/bin/sh -x
+
+# Start/stop time in Unix epoch. (Use ../Scripts/extract-unix-epoch.py)
+#   Current date: date +%s
+#   Other date  : date -d "mmm dd hh:mm:ss" +%s
+#   Convert back: date -d "1970-01-01 05:30:00 1234567890 sec"
+
+DATE=19
+MONTH=jul
+target=b2045-16
+
+starttimes=( 1311014378 1311015338 1311016298 1311017258 1311018218 1311019178 1311020138 1311021098 1311022058 1311023018 1311023978 1311024938 1311025898 1311026858 1311027818 1311028778 1311029738 1311030698 1311031658 1311032618 1311033578 1311034538 )
+
+stoptimes=( 1311015218 1311016178 1311017138 1311018098 1311019058 1311020018 1311020978 1311021938 1311022898 1311023858 1311024818 1311025778 1311026738 1311027698 1311028658 1311029618 1311030578 1311031538 1311032498 1311033458 1311034418 1311035378 )
+
+# Scan number to assign to the first starttime
+scanstart=1
+
+disk1=EoRa
+disk2=EoRb
+
+ethports=eth0,eth1
+hostfile=test_nodes
+nnodes=$( wc -l ${hostfile} | awk '{print $1}')
+
+scanstop=$(( ${scanstart} + ${#starttimes[@]} - 1))
+
+# This assumes scans of equal length
+#sleeptime=$(( ${stoptimes[0]} - ${starttimes[0] - 200 ))
+
+
+# set the gain table for dual.cpp to read
+#/mnt/code/gsbuser/dvl-6/work2/run_gaineq0.csh
+#cp -p /mnt/code/gsbuser/dvl-6/work2/test_nodes_raw .
+#cp -p /mnt/code/gsbuser/dvl-6/work2/run_rawdump .
+#./GAIN.csh
+#./GAIN.csh
+#./show-gains.csh > $target.${MONTH}${DATE}.gaintab.dat
+
+make
+date
+
+for (( i=$scanstart;i<$scanstop+1;i+=2)) ; do 
+
+    echo -n "SCAN ${i}: Starts at `date -d \"1970-01-01 05:30:00 ${starttimes[$i-$scanstart]} sec\" +%T`"
+    echo    " and ends at `date -d \"1970-01-01 05:30:00 ${stoptimes[$i-$scanstart]} sec\" +%T`"
+    # Wait for this scan's scheduled start time
+    while [ `date +%s`  -lt ${starttimes[$i-$scanstart]} ] ; do sleep 1 ; done
+
+    # Only start this scan if it isn't already supposed to be over
+    if [ `date +%s` -lt ${stoptimes[$i-$scanstart]} ]; then
+	date
+	echo "STARTING SCAN ${i}"
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} mpi_dual   /mnt/${disk1}/gsbuser/EoR/${target}_${MONTH}${DATE}_$i.node%d%s >& LOG_${target}_${MONTH}${DATE}_$i &
+        # Sleep until this scan's scheduled stop time minutes two minutes for safety
+	sleep $(( ${stoptimes[$i-$scanstart]} - `date +%s` - 120 ))
+	while [ `date +%s` -lt ${stoptimes[$i-$scanstart]} ] ; do sleep 1 ; done
+        # Now at the scheduled stop time, stop the scan
+	touch STOP
+	sleep 5
+	echo "STOPPING SCAN ${i}"
+	kill %1
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -1 mpi_dual   
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -9 mpi_dual   
+	date
+    fi
+
+    # If next scan is past our stopping point, quit.
+    if ((i+1>$scanstop)); then break; fi
+
+    echo -n "SCAN $((i+1)): Starts at `date -d \"1970-01-01 05:30:00 ${starttimes[$i-$scanstart+1]} sec\" +%T`"
+    echo    " and ends at `date -d \"1970-01-01 05:30:00 ${stoptimes[$i-$scanstart+1]} sec\" +%T`"
+    # Wait for the next scan's scheduled start time
+    while [ `date +%s`  -lt ${starttimes[$i-$scanstart+1]} ] ; do sleep 1 ; done
+
+    if [ `date +%s` -lt ${stoptimes[$i-$scanstart+1]} ]; then
+	date
+	echo "STARTING SCAN $((i+1))"
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} mpi_dual   /mnt/${disk2}/gsbuser/EoR/${target}_${MONTH}${DATE}_$((i+1)).node%d%s >& LOG_${target}_${MONTH}${DATE}_$((i+1)) &
+	sleep $(( ${stoptimes[$i-$scanstart+1]} - `date +%s` - 120 ))
+	while [ `date +%s`  -lt ${stoptimes[$i-$scanstart+1]} ] ; do sleep 1 ; done
+	touch STOP
+	sleep 5
+	echo "STOPPING SCAN $((i+1))"
+	kill %1
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -1 mpi_dual   
+	/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include ${ethports} -n ${nnodes} -bynode -hostfile ${hostfile} killall -9 mpi_dual   
+	date
+    fi
+
+done
+

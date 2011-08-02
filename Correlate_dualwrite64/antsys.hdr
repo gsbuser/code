@@ -1,0 +1,131 @@
+{ Antenna.def                                                                 
+* updated by manisha on Mon May 30 10:56:42 IST 2011 
+* RefAnt= C02-USB-130 RF=   1261.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C05 C06 C08 C10 C12 C13 C14 W01 W02 W03 W04 W05 W06 E02 E03 E04 
+* E05 E06 S01 S02 S03 S04 S06 
+* updated by manisha on Mon May 09 10:44:56 IST 2011 
+* RefAnt= C02-USB-130 RF=   1261.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C06 C08 C09 C10 C12 C13 W01 W02 W03 W04 W05 W06 E02 E03 E04 E05 
+* E06 S02 S03 S06 
+* updated by manisha on Sat Apr 23 10:17:43 IST 2011 
+* RefAnt= C02-USB-130 RF=   1261.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C06 C08 C09 C10 C12 C13 C14 W01 W02 W03 W04 W05 E02 E03 E04 E05 
+* E06 S01 S02 S03 S04 S06 
+* updated by ksanjay on Fri Apr 15 09:30:29 IST 2011 
+* RefAnt= C02-USB-130 RF=   1371.000
+* Changed delays for following antennas:
+* C06 C08 C09 C13 C14 W01 W02 W03 W06 E05 E06 S01 S03 S06 
+* updated by manisha on Wed Mar 02 12:29:01 IST 2011 
+* RefAnt= C02-USB-130 RF=   1272.000
+* Changed delays for following antennas:
+* W04 
+* updated by manisha on Wed Jan 05 08:01:25 IST 2011 
+* RefAnt= C02-USB-130 RF=   1261.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C05 C06 C08 C09 C10 C11 C12 C13 C14 W01 W02 W03 W04 W05 W06 E03 
+* E04 E05 E06 S01 S02 S03 S04 S06 
+* updated by ksanjay on Wed Aug 25 12:08:34 IST 2010 
+* RefAnt= C02-USB-130 RF=   1262.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C05 C06 C08 C09 C11 C12 C13 C14 W01 W02 W03 W05 W06 E02 E04 E05 
+* E06 S01 S02 S03 S04 S06 
+* updated by jitendra on Thu Nov 20 15:46:46 IST 2008 
+* RefAnt= C09-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C06 C08 C10 C11 C12 C13 C14 W01 W02 W03 W04 W05 W06 E02 E03 E04 
+* E05 E06 S01 S02 S03 S04 S06 
+* updated by jitendra on Thu Jul 03 14:58:50 IST 2008 
+* RefAnt= C09-USB-130 RF=   1390.000
+* Changed delays for following antennas:
+* C00 C01 C02 C03 C05 C06 C08 C10 C11 C12 C13 C14 W01 W02 W03 W04 W05 W06 E02 E03 
+* E04 E05 E06 S01 S02 S03 S04 S06 
+* updated by jitendra on Wed Apr 23 10:07:12 IST 2008 
+* RefAnt= C09-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C00 C02 C03 C05 C11 C12 C13 C14 W01 W02 W03 W06 E02 E03 E04 E05 E06 S01 S02 S03 
+* S04 S06 
+* updated by ishwar on Thu Nov 01 10:49:33 IST 2007 
+* RefAnt= C00-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C04 C06 C08 C09 C10 C11 C12 C14 W01 W02 W03 W04 W05 W06 E02 E03 E04 E05 E06 S01 
+* S02 S03 S04 S06 
+* updated by ishwar on Tue Jan 23 09:44:44 IST 2007 
+* RefAnt= C09-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C00 C01 C02 C03 C08 C11 C12 C13 C14 W01 W02 W03 W04 W05 W06 E02 E03 E04 E05 E06 
+* S01 S02 S03 S04 S06 
+* updated by ishwar on Wed Jun 14 11:04:24 IST 2006 
+* RefAnt= C02-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C04 C13 W03 W04 W05 W06 E02 E03 E04 E05 E06 S01 S02 S03 S04 S06 
+* updated by ishwar on Tue Dec 20 10:37:33 IST 2005 
+* RefAnt= C02-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C00 C01 C03 C04 C05 C06 C08 C09 C10 C11 C12 C13 C14 W01 W02 W03 W04 E02 E03 E04 
+* E05 E06 S01 S03 S04 
+* updated by chengalu on Sun Nov 13 09:58:55 IST 2005 
+* RefAnt= C00-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C01 C02 C03 C04 C05 C06 C08 C09 C11 C12 C13 W01 W02 W03 W04 W05 W06 E02 E03 E04 
+* E06 S01 S02 S03 S04 S06 
+* updated by ksanjay on Sat Nov 10 21:09:36 IST 2001 
+* RefAnt= C00-USB-175 RF=   1280.000
+* Changed delays for following antennas (175 pol only):
+* C12 E06 S02 S03 W06 S06 W05 C14 E05 E04 C05 E03 E02 W02 C08 C04 C09 C03 S04 C06 
+* W01 S01 W03 W04 C11 C01 C10 C13 
+* updated by ksanjay on Sat Nov 10 21:06:43 IST 2001 
+* RefAnt= C00-USB-130 RF=   1280.000
+* Changed delays for following antennas (130 pol only):
+* C12 E06 S02 S03 W06 S06 W05 C14 E05 E04 C05 E03 E02 W02 C08 C09 C03 S04 C06 W01 
+* S01 W03 W04 C11 C01 C10 C13 
+* updated by chengalu on Wed Oct 03 10:06:10 IST 2001 
+* RefAnt= C00-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C13 E06 S02 S03 S06 W05 E04 C10 W04 C02 W02 C08 C01 C09 C03 S04 C06 W01 C11 E03 
+* S01 C04 C05 C12 
+* updated by chengalu on Thu Dec 28 15:58:22 IST 2000 
+* RefAnt= C01-USB-130 RF=   1280.000
+* Changed delays for following antennas:
+* C08 W06 W05 C00 S02 C05 E05 C10 C14 C02 E02 C09 S03 S04 C04 W02 C11 C12 E06 
+* updated by chengalu on Thu Dec 28 10:36:04 IST 2000 
+* RefAnt=  RF=   1280.000
+* Changed XY co-rds for following antennas:
+* S02 W01 C03 
+*AntId  = Ant      bx        by        bz      delay0    delay1                
+ANT00   = C00       6.92     687.88     -20.04    -467.71    -467.71
+ANT01   = C01      13.25     326.44     -40.35     200.42     201.69
+ANT02   = C02       0.00       0.00       0.00     611.25     611.25
+ANT03   = C03     -51.20    -372.71     133.59     496.04     492.73
+ANT04   = C04     -50.99    -565.97     123.43     106.97     113.21
+ANT05   = C05      79.13      67.81    -246.59      96.06      90.77
+ANT06   = C06      71.24     -31.43    -220.58    -256.19    -259.09
+ANT07   = C08     130.80     280.68    -400.33    -443.61    -444.72
+ANT08   = C09      48.59      41.93    -151.65     211.09     207.67
+ANT09   = C10     191.36    -164.85    -587.49    -430.77    -430.76
+ANT10   = C11     102.52    -603.25    -321.56    -327.99    -338.83
+ANT11   = C12     209.29     174.86    -635.54   -1030.46   -1031.15
+ANT12   = C13     368.70    -639.48   -1117.92   -1350.59   -1351.05
+ANT13   = C14     207.38    -473.68    -628.63    -409.58    -410.19
+ANT14   = E02    -348.27    2814.54     953.67   -3915.83   -3902.80
+ANT15   = E03    -707.69    4576.04    1932.46   -7899.08   -7901.83
+ANT16   = E04   -1037.76    7780.58    2903.29  -14140.76  -14138.85
+ANT17   = E05   -1178.29   10199.89    3343.20  -20919.77  -20919.88
+ANT18   = E06   -1572.38   12073.31    4543.13  -25636.22  -25639.16
+ANT19   = S01     942.96     633.98   -2805.93   -5618.88   -5622.31
+ANT20   = S02    1452.89    -367.16   -4279.16   -9507.97   -9512.91
+ANT21   = S03    2184.59     333.18   -6404.96  -14180.58  -14181.27
+ANT22   = S04    3072.87     947.89   -8979.50  -19251.38  -19251.69
+ANT23   = S06    4592.75    -368.93  -13382.48  -28734.92  -28734.61
+ANT24   = W01    -201.29   -1591.95     591.32   -1432.10   -1431.14
+ANT25   = W02    -482.34   -3099.44    1419.39   -4735.26   -4735.15
+ANT26   = W03    -991.46   -5200.01    2899.11   -9823.06   -9824.65
+ANT27   = W04   -1733.91   -7039.06    5067.53  -15543.38  -15548.83
+ANT28   = W05   -2705.38   -8103.23    7817.14  -21830.33  -21833.01
+ANT29   = W06   -3101.12  -11245.81    8916.26  -29845.03  -29841.80
+ANT30   = C07   -3102.11  -11245.60    8916.26  -29671.71  -29668.49
+ANT31   = S05   -3102.11  -11245.60    8916.26  -29671.71  -29668.49
+} Antenna       
+END_OF_HEADER

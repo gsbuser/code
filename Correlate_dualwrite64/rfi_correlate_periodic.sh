@@ -1,8 +1,8 @@
 #!/bin/bash
 
-BASEFILENAME="rfi_jul07"
-i=1 #iteration number
-drive_name="EoRa" # harddrive to store stuff on
+BASEFILENAME="rfi_jul26"
+i=2  #starting iteration number
+drive_name="EoRb" # harddrive to store stuff on
 L=7200   # Total time to run rfi_correlate in seconds
 I=300 # Length of each observing section in seconds
 P=0   # Length of time to pause between observations in seconds
@@ -17,7 +17,7 @@ log_name="LOG_${file_name}"
 
 /opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include eth0,eth1 -n 48 -bynode -hostfile test_nodes  mpi_dual   /mnt/${drive_name}/gsbuser/EoR/${file_name}.node%d%s >& ${log_name} &
 
-echo "running with ${drive_name} ${file_name} ${log_name} at $(($(date "+%s") - $ST)) seconds in."
+echo "running with ${drive_name} ${file_name} ${log_name} at $(date)."
 
 while [[ $(($(date "+%s") - $ST)) -lt $L ]]; do
   T=$(date "+%s")
@@ -25,11 +25,11 @@ while [[ $(($(date "+%s") - $ST)) -lt $L ]]; do
     #echo "Doing it"
     sleep 0
   else
-    echo "Killing mpirun, run $i at $(($(date "+%s") - $ST)) seconds in."
+    echo "Killing mpirun, run $i at $(date)."
     
     kill $(ps -o pid -C mpirun | grep -v PID)
     
-    echo "Pausing for $P seconds, at $(($(date "+%s") - $ST)) seconds in."
+    echo "Pausing for $P seconds, at $(date)."
     sleep $P
     i=$((i + 1))  # Next Run
     
@@ -40,12 +40,13 @@ while [[ $(($(date "+%s") - $ST)) -lt $L ]]; do
       log_name="LOG_${file_name}"
       /opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include eth0,eth1 -n 48 -bynode -hostfile test_nodes  mpi_dual   /mnt/${drive_name}/gsbuser/EoR/${file_name}.node%d%s >& ${log_name} &
 
-      echo "running with ${drive_name} ${file_name} ${log_name} at $(($(date "+%s") - $ST)) seconds in."
+      echo "running with ${drive_name} ${file_name} ${log_name} at $(date)."
     
       #IT=$(date "+%s")
       IT=$((i*I - I + ST))
     fi
   fi
+# echo "Run for $(($(date "+%s") - $ST)) seconds."
 done
 
 echo "Done at $(date)"

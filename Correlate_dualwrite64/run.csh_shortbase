@@ -1,0 +1,17 @@
+#!/bin/sh -x
+# set the gain table for dual.cpp to read
+#/mnt/code/gsbuser/dvl-6/work2/run_gaineq0.csh
+#cp -p /mnt/code/gsbuser/dvl-6/work2/test_nodes_raw .
+#cp -p /mnt/code/gsbuser/dvl-6/work2/run_rawdump .
+#/mnt/code/gsbuser/dvl-6/work2/GAIN.csh
+#/mnt/code/gsbuser/dvl-6/work2/GAIN.csh
+#make
+DATE=24
+date
+for (( i=1;i<2;i+=2)) ; do 
+/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include eth0,eth1 -n 31 -bynode -hostfile test_nodes mpi_dual   /mnt/a/gsbuser/EoR/b0823+26_feb"$DATE"_$i.node%d%s >& LOG_b0823+26_feb"$DATE"_$i 
+date
+#/opt/openmpi-1.2.2/bin/mpirun --mca btl_tcp_if_include eth0,eth1 -n 31 -bynode -hostfile test_nodes mpi_dual   /mnt/b/gsbuser/EoR/b0823+26_feb"$DATE"_$((i+1)).node%d%s >& LOG_b0823+26_feb"$DATE"_$((i+1))
+#date
+done
+
