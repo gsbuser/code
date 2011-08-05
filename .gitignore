@@ -27,3 +27,5 @@ LOG*
 *.cmd*
 *.mod*
 *.20*
+*.aux
+*.pdf
