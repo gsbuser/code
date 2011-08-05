@@ -158,7 +158,8 @@ void corr_driver(signed char *buf, int len, MPI_Comm mpi_acq_comm)
   //
 
       double dm=43.516;
-      double period=0.53844571850954708; //B2217+47 Aug 02 2011, 7am
+      double period=0.53844607128335201; //B2217+47 Aug 03 2011, 0730
+      //   double period=0.53844571850954708; //B2217+47 Aug 02 2011, 7am
       //	double period=0.53844477621453655; // B2217+47 Jul 30 2011, 7am 
  //  double period=0.53844452557889917; //B2217+47 Jul 28 2010, 8am
   //double period=0.53844275273615415; // B2217+47  Jul 25 2010, 2am

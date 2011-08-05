@@ -160,20 +160,22 @@ Step323() {
  	echo ===== Done svd_uvec ===============================================
  	date
  	echo ===== Starting svd_vvec ===========================================
-# 	$mpirun ./svd_vvec.x $tmp/$basename.node%X.fs0 \
-# 	    $tmp/$basename.svdtvec.dat \
-# 	    $tmp/$basename.svdrfi.node%X   
+ 	$mpirun ./svd_vvec.x $tmp/$basename.node%X.fs0 \
+ 	    $tmp/$basename.svdtvec.dat \
+ 	    $tmp/$basename.svdrfi.node%X   
  	echo ===== Done svd_vvec ===============================================
  	date
 	#echo ===== Starting svd_model ==========================================
-#	$mpirun ./svd_model.x $OUTDIR/$basename.svdtvec.dat \
-#	    $OUTDIR/$basename.svdrfi.node%X \
-#	    $OUTDIR/$basename.corrout.dat.node%X
+	$mpirun ./svd_model.x $OUTDIR/$basename.svdtvec.dat \
+	    $OUTDIR/$basename.svdrfi.node%X \
+	    $OUTDIR/$basename.corrout.dat.node%X
 	#echo ===== Done svd_model ==============================================
 	date
 	
 	ssh $OUTMACHINE "scp 192.168.16.33:$tmp/$basename.svdtvec.dat $OUTDIR/"
+	echo "copied $tmp/$basename.svdtvec.dat"
 	ssh $OUTMACHINE "scp 192.168.16.33:$tmp/$basename.eval.dat $OUTDIR/"
+	echo "copied $tmp/$basename.eval.dat"
 	for node in `seq 33 48`
 	do
 	  ssh $OUTMACHINE "scp 192.168.16.${node}:$tmp/$basename.svdrfi.node'*' $OUTDIR/"

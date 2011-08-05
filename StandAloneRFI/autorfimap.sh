@@ -22,7 +22,7 @@ year=$4
 startrun=$5
 lastrun=$6
 
-disk=$7
+disk=$EoRa
 
 
 

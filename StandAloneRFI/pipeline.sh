@@ -9,14 +9,14 @@
 
 #target=b2217
 #rawtarget=${target}+47
-target=rfi  #pulsar name, if SVDing EoR data, rfi if regular svd
+target=b2045-16  #pulsar name, if SVDing EoR data, rfi if regular svd
 rawtarget=${target}
 
-month=jul
-date=07
+month=jun
+date=17
 year=11
-run=5
-disk=EoRa
+run=22
+disk=EoRd
 
 
 # Make sure OUTDIR is visible to all nodes or mount the OUTDIR on all nodes. Move the svd files to gsbm3:/mnt/EoR/gsbuser/EoR/RFI_Out/
@@ -119,8 +119,8 @@ Step1() {
 	NTA=$(( $NT0 / 256 ))
 	NT05=$(( $NT0 + 5 ))
 	I="-i"
-        NT0=300
-	NT0=200 #changed as of 2011.07.31, attempt to fix july 12th scan 4
+#        NT0=400
+	#NT0=200 #changed as of 2011.07.31, attempt to fix july 12th scan 4
 
 	sed $I "s/nt=[0-9]*/nt=$NT0/g" ${SVDRFI}/svd_model.f90 #| grep nt= 
 	sed $I "s/nt=[0-9]*/nt=$NT0/g" ${SVDRFI}/svd_uvec.f90 #| grep nt= 
@@ -174,10 +174,14 @@ Step323() {
 	date
 	
 	ssh $OUTMACHINE "scp 192.168.16.33:$tmp/$basename.svdtvec.dat $OUTDIR/"
+	echo "copied $tmp/$basename.svdtvec.dat"
 	ssh $OUTMACHINE "scp 192.168.16.33:$tmp/$basename.eval.dat $OUTDIR/"
+	echo "copied $tmp/$basename.eval.dat"
 	for node in `seq 33 48`
 	do
 	  ssh $OUTMACHINE "scp 192.168.16.${node}:$tmp/$basename.svdrfi.node'*' $OUTDIR/"
+	  echo "copied $tmp/$basename.svdrfi.node'*'"
+
 	done
 
 	echo --- Done with Step 3.2.3 - SVDRFI I1 ------------------------; date
