@@ -5,9 +5,25 @@
 # Ignore files ending in ~ or # (usually temp files created by editor)
 *[~#]
 
-# Ignore files ending in .o or .a or .x (object and compiled programs)
+# Ignore compiled files
 *.[oax]
+*.out
 
-# Ignore files starting with LOG or ending with .log
+# Ignore log and text files
 LOG*
-.log
+*.log*
+*.txt*
+
+# Ignoe old and test things and their derivatives
+*.old*
+*.test*
+
+# Ignore big and usless files and their derivatives
+*.node*
+*.dat*
+*.pgm*
+*.fs0*
+*.rebin*
+*.cmd*
+*.mod*
+*.20*
