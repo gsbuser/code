@@ -1,9 +1,15 @@
 \documentclass[a4paper,12pt]{report}
+\usepackage[super,sort&compress]{natbib}
 \begin{document}
+\citeindextrue
 \title{Final report of the ast398 group's effort at the Giant Meterwave Radio Telescope to remove RFI and investigate the epoch of reionization}
 \author{Albert,Joshua \and Bahavar,Nidhi \and Kuiack,Mark \and Lien,Connie \and Nyugen,Hans}
 \date{26 August, 2011}
 \maketitle
+
+% Use '%' to comment
+% Make a new section or subsection with '\section{name}' and '\subsection{name}'
+% Cite with '\citep{cite_key}'
 
 \begin{abstract}
 The project consisted of two main goals. The first was to devise a standard procedure to locate and eliminate radio frequency interference, within the near vicinity of the Giant Meterwave Radio Telescope. The second aim was to continue the investigation of the epoch of reionization.
@@ -11,7 +17,7 @@ The project consisted of two main goals. The first was to devise a standard proc
 
 \section{Introduction}
 \section{Definition of Terms}
-Radio frequency interference, hereafter refered to as RFI. Epoch of reionization, hereafter refered to as EoR.
+Radio frequency interference, hereafter refered to as RFI\cite{albert11a}. Epoch of reionization, hereafter refered to as EoR.
 
 \section{body}
 The foundations of the rigorous study of \emph{analysis}
@@ -34,5 +40,16 @@ One may readily verify that if $f$ and $g$ are continuous
 functions on $D$ then the functions $f+g$, $f-g$ and
 $f.g$ are continuous. If in addition $g$ is everywhere
 non-zero then $f/g$ is continuous.
+
+\begin{thebibliography}{100}
+
+% \bibitem{lastnameYYx} the last name of the author, last two digits of year, a,b,c,d,etc. if multiple publications in one year.
+% Authors, \emph{title}, location, date, where to get it.
+\bibitem{albert11a}
+Joshua Albert, \emph{Progress Report Week 1}, Khodad, India, 17 June, 2011, progress-report-20110617-josh.pdf.
+
+
+
+\end{thebibliography}
 
 \end{document}

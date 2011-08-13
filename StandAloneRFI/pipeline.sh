@@ -9,11 +9,11 @@
 
 #target=b2217
 #rawtarget=${target}+47
-target=b2045-16  #pulsar name, if SVDing EoR data, rfi if regular svd
+target=b2217+47  # pulsar name, if SVDing EoR data, rfi if regular svd
 rawtarget=${target}
 
-month=jun
-date=17
+month=jul
+date=29 
 year=11
 run=22
 disk=EoRd
